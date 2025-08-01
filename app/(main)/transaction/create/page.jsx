@@ -1,7 +1,7 @@
-import { getUserAccounts } from "@/actions/dashboard";
+import { getUserAccounts } from "@app/actions/dashboard";
 import { defaultCategories } from "@/data/categories";
 import { AddTransactionForm } from "../_components/transaction-form";
-import { getTransaction } from "@/actions/transaction";
+import { getTransaction } from "@app/actions/transaction";
 import { headers } from "next/headers";
 
 export default async function AddTransactionPage() {

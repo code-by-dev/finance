@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { updateDefaultAccount } from "@/actions/account";
+import { updateDefaultAccount } from "@app/actions/account";
 import { toast } from "sonner";
 
 export function AccountCard({ account }) {
