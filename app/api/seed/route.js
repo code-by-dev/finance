@@ -1,4 +1,4 @@
-import { seedTransactions } from "@/actions/seed";
+import { seedTransactions } from "@/app/actions/seed";
 
 export async function GET() {
   const result = await seedTransactions();

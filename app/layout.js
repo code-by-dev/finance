@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
           <link rel="icon" href="/logo-sm.png" sizes="any" />
         </head>
         <body className={`${inter.className}`}>
-          <Header/>
+          <Header />
           <main className="min-h-screen">{children}</main>
           <Toaster richColors />
 

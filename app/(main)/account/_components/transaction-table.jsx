@@ -84,7 +84,7 @@ export function TransactionTable({ transactions }) {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter((transaction) =>
-        transaction.description?.toLowerCase().includes(searchLower)
+        transaction.description?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -127,13 +127,13 @@ export function TransactionTable({ transactions }) {
 
   // Pagination calculations
   const totalPages = Math.ceil(
-    filteredAndSortedTransactions.length / ITEMS_PER_PAGE
+    filteredAndSortedTransactions.length / ITEMS_PER_PAGE,
   );
   const paginatedTransactions = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredAndSortedTransactions.slice(
       startIndex,
-      startIndex + ITEMS_PER_PAGE
+      startIndex + ITEMS_PER_PAGE,
     );
   }, [filteredAndSortedTransactions, currentPage]);
 
@@ -149,7 +149,7 @@ export function TransactionTable({ transactions }) {
     setSelectedIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id]
+        : [...current, id],
     );
   };
 
@@ -157,7 +157,7 @@ export function TransactionTable({ transactions }) {
     setSelectedIds((current) =>
       current.length === paginatedTransactions.length
         ? []
-        : paginatedTransactions.map((t) => t.id)
+        : paginatedTransactions.map((t) => t.id),
     );
   };
 
@@ -170,7 +170,7 @@ export function TransactionTable({ transactions }) {
   const handleBulkDelete = async () => {
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selectedIds.length} transactions?`
+        `Are you sure you want to delete ${selectedIds.length} transactions?`,
       )
     )
       return;
@@ -374,7 +374,7 @@ export function TransactionTable({ transactions }) {
                       "text-right font-medium",
                       transaction.type === "EXPENSE"
                         ? "text-red-500"
-                        : "text-green-500"
+                        : "text-green-500",
                     )}
                   >
                     {transaction.type === "EXPENSE" ? "-" : "+"}$
@@ -403,7 +403,7 @@ export function TransactionTable({ transactions }) {
                               <div>
                                 {format(
                                   new Date(transaction.nextRecurringDate),
-                                  "PPP"
+                                  "PPP",
                                 )}
                               </div>
                             </div>
@@ -428,7 +428,7 @@ export function TransactionTable({ transactions }) {
                         <DropdownMenuItem
                           onClick={() =>
                             router.push(
-                              `/transaction/create?edit=${transaction.id}`
+                              `/transaction/create?edit=${transaction.id}`,
                             )
                           }
                         >

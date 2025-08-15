@@ -79,7 +79,7 @@ export function NoPaginationTransactionTable({ transactions }) {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter((transaction) =>
-        transaction.description?.toLowerCase().includes(searchLower)
+        transaction.description?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -132,7 +132,7 @@ export function NoPaginationTransactionTable({ transactions }) {
     setSelectedIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id]
+        : [...current, id],
     );
   };
 
@@ -140,7 +140,7 @@ export function NoPaginationTransactionTable({ transactions }) {
     setSelectedIds((current) =>
       current.length === filteredAndSortedTransactions.length
         ? []
-        : filteredAndSortedTransactions.map((t) => t.id)
+        : filteredAndSortedTransactions.map((t) => t.id),
     );
   };
 
@@ -153,7 +153,7 @@ export function NoPaginationTransactionTable({ transactions }) {
   const handleBulkDelete = async () => {
     if (
       !window.confirm(
-        `Are you sure you want to delete ${selectedIds.length} transactions?`
+        `Are you sure you want to delete ${selectedIds.length} transactions?`,
       )
     )
       return;
@@ -343,7 +343,7 @@ export function NoPaginationTransactionTable({ transactions }) {
                       "text-right font-medium",
                       transaction.type === "EXPENSE"
                         ? "text-red-500"
-                        : "text-green-500"
+                        : "text-green-500",
                     )}
                   >
                     {transaction.type === "EXPENSE" ? "-" : "+"}$
@@ -372,7 +372,7 @@ export function NoPaginationTransactionTable({ transactions }) {
                               <div>
                                 {format(
                                   new Date(transaction.nextRecurringDate),
-                                  "PPP"
+                                  "PPP",
                                 )}
                               </div>
                             </div>
@@ -397,7 +397,7 @@ export function NoPaginationTransactionTable({ transactions }) {
                         <DropdownMenuItem
                           onClick={() =>
                             router.push(
-                              `/transaction/create?edit=${transaction.id}`
+                              `/transaction/create?edit=${transaction.id}`,
                             )
                           }
                         >

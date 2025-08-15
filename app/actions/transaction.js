@@ -5,9 +5,18 @@ import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import aj from "@/lib/arcjet";
-import { request } from "@arcjet/next";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Create a no-op request function for development
+const getRequest = async () => {
+  if (process.env.NODE_ENV === "development") {
+    return { url: "http://localhost:3000", method: "POST" };
+  }
+  // Only import in production
+  const { request } = await import("@arcjet/next");
+  return request();
+};
 
 const serializeAmount = (obj) => ({
   ...obj,
@@ -20,30 +29,36 @@ export async function createTransaction(data) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    // Get request data for ArcJet
-    const req = await request();
+    // Get request data for ArcJet, fail open in dev or on timeout
+    try {
+      const req = await getRequest();
+      const decision = await aj.protect(req, {
+        userId,
+        requested: 1, // Specify how many tokens to consume
+      });
 
-    // Check rate limit
-    const decision = await aj.protect(req, {
-      userId,
-      requested: 1, // Specify how many tokens to consume
-    });
+      if (decision.isDenied()) {
+        if (decision.reason.isRateLimit()) {
+          const { remaining, reset } = decision.reason;
+          console.error({
+            code: "RATE_LIMIT_EXCEEDED",
+            details: {
+              remaining,
+              resetInSeconds: reset,
+            },
+          });
 
-    if (decision.isDenied()) {
-      if (decision.reason.isRateLimit()) {
-        const { remaining, reset } = decision.reason;
-        console.error({
-          code: "RATE_LIMIT_EXCEEDED",
-          details: {
-            remaining,
-            resetInSeconds: reset,
-          },
-        });
+          throw new Error("Too many requests. Please try again later.");
+        }
 
-        throw new Error("Too many requests. Please try again later.");
+        throw new Error("Request blocked");
       }
-
-      throw new Error("Request blocked");
+    } catch (e) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Arcjet decision failed; continuing in dev:", e?.message || e);
+      } else {
+        throw e;
+      }
     }
 
     const user = await db.user.findUnique({

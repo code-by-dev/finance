@@ -34,12 +34,12 @@ const COLORS = [
 
 export function DashboardOverview({ accounts, transactions }) {
   const [selectedAccountId, setSelectedAccountId] = useState(
-    accounts.find((a) => a.isDefault)?.id || accounts[0]?.id
+    accounts.find((a) => a.isDefault)?.id || accounts[0]?.id,
   );
 
   // Filter transactions for selected account
   const accountTransactions = transactions.filter(
-    (t) => t.accountId === selectedAccountId
+    (t) => t.accountId === selectedAccountId,
   );
 
   // Get recent transactions (last 5)
@@ -73,7 +73,7 @@ export function DashboardOverview({ accounts, transactions }) {
     ([category, amount]) => ({
       name: category,
       value: amount,
-    })
+    }),
   );
 
   return (
@@ -126,7 +126,7 @@ export function DashboardOverview({ accounts, transactions }) {
                         "flex items-center",
                         transaction.type === "EXPENSE"
                           ? "text-red-500"
-                          : "text-green-500"
+                          : "text-green-500",
                       )}
                     >
                       {transaction.type === "EXPENSE" ? (

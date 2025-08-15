@@ -6,8 +6,8 @@ import { headers } from "next/headers";
 
 export default async function AddTransactionPage() {
   const accounts = await getUserAccounts();
-  
-   // Step 2: Read query params using headers
+
+  // Step 2: Read query params using headers
   const headersList = await headers();
   const currentUrl = headersList.get("x-next-url") || "/";
   const url = new URL(currentUrl, "http://localhost"); // base URL required

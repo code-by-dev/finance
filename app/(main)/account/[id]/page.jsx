@@ -6,13 +6,13 @@ import { notFound } from "next/navigation";
 import { AccountChart } from "../_components/account-chart";
 
 // ✅ Tell Next.js this route is dynamic
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default async function AccountPage({ params }) {
   const { id } = await params;
 
   const accountData = await getAccountWithTransactions(id); //
-  
+
   if (!accountData) {
     notFound();
   }
@@ -27,7 +27,8 @@ export default async function AccountPage({ params }) {
             {account.name}
           </h1>
           <p className="text-muted-foreground">
-            {account.type.charAt(0) + account.type.slice(1).toLowerCase()} Account
+            {account.type.charAt(0) + account.type.slice(1).toLowerCase()}{" "}
+            Account
           </p>
         </div>
 
@@ -42,12 +43,16 @@ export default async function AccountPage({ params }) {
       </div>
 
       {/* Chart Section */}
-      <Suspense fallback={<BarLoader className="mt-4" width={"100%"} color="#9333ea" />}>
+      <Suspense
+        fallback={<BarLoader className="mt-4" width={"100%"} color="#9333ea" />}
+      >
         <AccountChart transactions={transactions} />
       </Suspense>
 
       {/* Transactions Table */}
-      <Suspense fallback={<BarLoader className="mt-4" width={"100%"} color="#9333ea" />}>
+      <Suspense
+        fallback={<BarLoader className="mt-4" width={"100%"} color="#9333ea" />}
+      >
         <TransactionTable transactions={transactions} />
       </Suspense>
     </div>

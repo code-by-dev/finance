@@ -92,7 +92,7 @@ export default function EmailTemplate({
                       <Text style={styles.text}>{category}</Text>
                       <Text style={styles.text}>${amount}</Text>
                     </div>
-                  )
+                  ),
                 )}
               </Section>
             )}

@@ -2,8 +2,11 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@app/*": ["./app/*"]
+      "@app/*": ["app/*"],
+      "@/*": ["*"],
+      "@/actions/*": ["app/actions/*"],
+      "@/lib/*": ["lib/*"],
+      "@/emails/*": ["emails/*"]
     }
   }
 }
