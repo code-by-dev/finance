@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: welth
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # Render will automatically set the PORT environment variable
+    # Make sure to add your DATABASE_URL and DIRECT_URL in Render dashboard
