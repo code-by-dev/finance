@@ -3,7 +3,7 @@ const { parse } = require('url');
 const next = require('next');
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = '0.0.0.0'; // Bind to all interfaces
+const hostname = '0.0.0.0:3000'; // Bind to all interfaces
 const port = parseInt(process.env.PORT, 10) || 3000;
 
 console.log(`Starting server in ${dev ? 'development' : 'production'} mode`);
