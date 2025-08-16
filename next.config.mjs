@@ -15,13 +15,10 @@ const nextConfig = {
     },
   },
 
-  
   output: 'standalone',
   
-
-  env: {
-    PORT: (process.env.PORT || 3000).toString(),
-  },
+  // Remove PORT from env to avoid conflicts with server.js
+  // The server.js file handles PORT configuration
 };
 
 export default nextConfig;

@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "email": "email dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "node server.js",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@arcjet/next": "^1.0.0-beta.8",
@@ -44,9 +45,11 @@
     "vaul": "^1.1.2",
     "zod": "^3.25.71"
   },
+  "dependencies": {
+    "@prisma/client": "^6.11.1",
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@prisma/client": "^6.11.1",
     "@react-email/preview-server": "^4.2.4",
     "@tailwindcss/postcss": "^4.1.11",
     "autoprefixer": "^10.4.21",
