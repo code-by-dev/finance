@@ -1,5 +1,6 @@
 services:
   - type: web
+<<<<<<< HEAD
     name: finance-management
     env: node
     plan: free
@@ -12,3 +13,16 @@ services:
         value: 10000
     healthCheckPath: /api/health
     autoDeploy: true
+=======
+    name: welth
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+    # Render will automatically set the PORT environment variable
+    # Make sure to add your DATABASE_URL and DIRECT_URL in Render dashboard
+>>>>>>> dc81b113add6f71dd92c5c60f05d7ec14dc261e0
