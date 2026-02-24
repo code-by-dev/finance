@@ -1,6 +1,8 @@
 "use server";
 
-import { db } from "@/lib/prisma";
+import mongoose from "mongoose";
+import { connectDB } from "@/lib/mongodb";
+import { User, Budget, Transaction } from "@/models";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
@@ -9,53 +11,46 @@ export async function getCurrentBudget(accountId) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    await connectDB();
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await User.findOne({ clerkUserId: userId });
+    if (!user) throw new Error("User not found");
 
-    const budget = await db.budget.findFirst({
-      where: {
-        userId: user.id,
-      },
-    });
+    const budget = await Budget.findOne({ userId: user._id }).lean();
 
-    // Get current month's expenses
     const currentDate = new Date();
     const startOfMonth = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
-      1,
+      1
     );
     const endOfMonth = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth() + 1,
-      0,
+      0
     );
 
-    const expenses = await db.transaction.aggregate({
-      where: {
-        userId: user.id,
-        type: "EXPENSE",
-        date: {
-          gte: startOfMonth,
-          lte: endOfMonth,
+    const result = await Transaction.aggregate([
+      {
+        $match: {
+          userId: user._id,
+          type: "EXPENSE",
+          date: { $gte: startOfMonth, $lte: endOfMonth },
+          accountId: mongoose.Types.ObjectId.isValid(accountId)
+            ? new mongoose.Types.ObjectId(accountId)
+            : accountId,
         },
-        accountId,
       },
-      _sum: {
-        amount: true,
-      },
-    });
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]);
+
+    const currentExpenses = result[0]?.total ?? 0;
 
     return {
-      budget: budget ? { ...budget, amount: budget.amount.toNumber() } : null,
-      currentExpenses: expenses._sum.amount
-        ? expenses._sum.amount.toNumber()
-        : 0,
+      budget: budget
+        ? { ...budget, id: budget._id?.toString(), amount: Number(budget.amount) }
+        : null,
+      currentExpenses: Number(currentExpenses),
     };
   } catch (error) {
     console.error("Error fetching budget:", error);
@@ -68,30 +63,21 @@ export async function updateBudget(amount) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    await connectDB();
 
+    const user = await User.findOne({ clerkUserId: userId });
     if (!user) throw new Error("User not found");
 
-    // Update or create budget
-    const budget = await db.budget.upsert({
-      where: {
-        userId: user.id,
-      },
-      update: {
-        amount,
-      },
-      create: {
-        userId: user.id,
-        amount,
-      },
-    });
+    const budget = await Budget.findOneAndUpdate(
+      { userId: user._id },
+      { $set: { amount } },
+      { new: true, upsert: true }
+    );
 
     revalidatePath("/dashboard");
     return {
       success: true,
-      data: { ...budget, amount: budget.amount.toNumber() },
+      data: { ...budget.toObject(), id: budget._id.toString(), amount: Number(budget.amount) },
     };
   } catch (error) {
     console.error("Error updating budget:", error);

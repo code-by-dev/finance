@@ -1,50 +1,56 @@
 "use server";
 
-import { db } from "@/lib/prisma";
+import mongoose from "mongoose";
+import { connectDB } from "@/lib/mongodb";
+import { User, Account, Transaction } from "@/models";
+import { toPlain } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
-const serializeDecimal = (obj) => {
-  const serialized = { ...obj };
-  if (obj.balance?.toNumber) {
-    serialized.balance = obj.balance.toNumber();
-  }
-  if (obj.amount?.toNumber) {
-    serialized.amount = obj.amount.toNumber();
-  }
-  return serialized;
+function isMongoTransactionsNotSupported(error) {
+  const msg = error?.message ?? "";
+  return (
+    msg.includes("Transaction numbers are only allowed on a replica set member") ||
+    msg.includes("replica set member or mongos")
+  );
+}
+
+const serializeDecimal = (doc) => {
+  const out = toPlain(doc);
+  if (!out) return out;
+  if (out.balance != null) out.balance = Number(out.balance);
+  if (out.amount != null) out.amount = Number(out.amount);
+  return out;
 };
 
 export async function getAccountWithTransactions(accountId) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
+  await connectDB();
 
+  const user = await User.findOne({ clerkUserId: userId });
   if (!user) throw new Error("User not found");
 
-  const account = await db.account.findUnique({
-    where: {
-      id: accountId,
-      userId: user.id,
-    },
-    include: {
-      transactions: {
-        orderBy: { date: "desc" },
-      },
-      _count: {
-        select: { transactions: true },
-      },
-    },
-  });
+  const account = await Account.findOne({
+    _id: accountId,
+    userId: user._id,
+  }).lean();
 
   if (!account) return null;
 
+  const transactions = await Transaction.find({
+    accountId: account._id,
+  })
+    .sort({ date: -1 })
+    .lean();
+
+  const count = transactions.length;
+
   return {
     ...serializeDecimal(account),
-    transactions: account.transactions.map(serializeDecimal),
+    transactions: transactions.map(serializeDecimal),
+    _count: { transactions: count },
   };
 }
 
@@ -53,49 +59,52 @@ export async function bulkDeleteTransactions(transactionIds) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    await connectDB();
 
+    const user = await User.findOne({ clerkUserId: userId });
     if (!user) throw new Error("User not found");
 
-    const transactions = await db.transaction.findMany({
-      where: {
-        id: { in: transactionIds },
-        userId: user.id,
-      },
-    });
+    const transactions = await Transaction.find({
+      _id: { $in: transactionIds },
+      userId: user._id,
+    }).lean();
 
     const accountBalanceChanges = transactions.reduce((acc, transaction) => {
       const change =
         transaction.type === "EXPENSE"
-          ? transaction.amount
-          : -transaction.amount;
-      acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
+          ? Number(transaction.amount)
+          : -Number(transaction.amount);
+      const aid = transaction.accountId?.toString?.() ?? transaction.accountId;
+      acc[aid] = (acc[aid] || 0) + change;
       return acc;
     }, {});
 
-    await db.$transaction(async (tx) => {
-      await tx.transaction.deleteMany({
-        where: {
-          id: { in: transactionIds },
-          userId: user.id,
-        },
+    try {
+      const session = await mongoose.connection.startSession();
+      await session.withTransaction(async () => {
+        await Transaction.deleteMany(
+          { _id: { $in: transactionIds }, userId: user._id },
+          { session }
+        );
+        for (const [accountId, balanceChange] of Object.entries(
+          accountBalanceChanges
+        )) {
+          await Account.updateOne(
+            { _id: accountId },
+            { $inc: { balance: balanceChange } },
+            { session }
+          );
+        }
       });
+      await session.endSession();
+    } catch (txnError) {
+      if (!isMongoTransactionsNotSupported(txnError)) throw txnError;
 
-      for (const [accountId, balanceChange] of Object.entries(
-        accountBalanceChanges,
-      )) {
-        await tx.account.update({
-          where: { id: accountId },
-          data: {
-            balance: {
-              increment: balanceChange,
-            },
-          },
-        });
+      await Transaction.deleteMany({ _id: { $in: transactionIds }, userId: user._id });
+      for (const [accountId, balanceChange] of Object.entries(accountBalanceChanges)) {
+        await Account.updateOne({ _id: accountId }, { $inc: { balance: balanceChange } });
       }
-    });
+    }
 
     revalidatePath("/dashboard");
     revalidatePath("/account/[id]");
@@ -111,29 +120,21 @@ export async function updateDefaultAccount(accountId) {
     const { userId } = await auth();
     if (!userId) throw new Error("Unauthorized");
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    await connectDB();
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await User.findOne({ clerkUserId: userId });
+    if (!user) throw new Error("User not found");
 
-    await db.account.updateMany({
-      where: {
-        userId: user.id,
-        isDefault: true,
-      },
-      data: { isDefault: false },
-    });
+    await Account.updateMany(
+      { userId: user._id, isDefault: true },
+      { $set: { isDefault: false } }
+    );
 
-    const account = await db.account.update({
-      where: {
-        id: accountId,
-        userId: user.id,
-      },
-      data: { isDefault: true },
-    });
+    const account = await Account.findOneAndUpdate(
+      { _id: accountId, userId: user._id },
+      { $set: { isDefault: true } },
+      { new: true }
+    );
 
     revalidatePath("/dashboard");
     return { success: true, data: serializeDecimal(account) };
